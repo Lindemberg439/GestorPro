@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Produto",
+      "description": "Itens do estoque",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "number" },
+        "expiryDate": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["normal", "low-stock", "expiring-soon"] },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "price", "stock", "ownerId"]
+    },
+    "Transaction": {
+      "title": "Transação",
+      "description": "Registro de vendas e movimentações financeiras",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["sale", "purchase", "adjustment", "input", "output"] },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "items": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "quantity": { "type": "number" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["type", "amount", "date", "ownerId"]
+    },
+    "Client": {
+      "title": "Cliente",
+      "description": "Dados do consumidor",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "totalSpent": { "type": "number" },
+        "lastVisit": { "type": "string" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "Profile": {
+      "title": "Perfil do Usuário",
+      "description": "Dados da loja/administrador",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "storeName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] }
+      },
+      "required": ["email", "name"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Coleção de produtos"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Histórico de vendas"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Cadastro de clientes"
+    },
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "Perfis de usuário"
+    }
+  }
+}

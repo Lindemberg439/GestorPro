@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Profiles
+    match /profiles/{userId} {
+      function isValidProfile(data) {
+        return data.keys().hasAll(['email', 'name']) && 
+               data.email is string && data.email.size() <= 256 &&
+               data.name is string && data.name.size() <= 128;
+      }
+      
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidProfile(incoming());
+      allow update: if isOwner(userId) && isValidProfile(incoming());
+    }
+
+    // 2. Products
+    match /products/{productId} {
+      function isValidProduct(data) {
+        return data.keys().hasAll(['name', 'price', 'stock', 'ownerId']) &&
+               data.name is string && data.name.size() <= 128 &&
+               data.price is number && data.price >= 0 &&
+               data.stock is number &&
+               data.ownerId == request.auth.uid;
+      }
+
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isEmailVerified() && isValidProduct(incoming()) && isValidId(productId);
+      allow update: if isSignedIn() && isEmailVerified() && resource.data.ownerId == request.auth.uid && isValidProduct(incoming());
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // 3. Transactions
+    match /transactions/{transactionId} {
+      function isValidTransaction(data) {
+        return data.keys().hasAll(['type', 'amount', 'date', 'ownerId']) &&
+               data.type in ['sale', 'purchase', 'adjustment', 'input', 'output'] &&
+               data.amount is number &&
+               data.date is string &&
+               data.ownerId == request.auth.uid;
+      }
+
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isEmailVerified() && isValidTransaction(incoming()) && isValidId(transactionId);
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // 4. Clients
+    match /clients/{clientId} {
+      function isValidClient(data) {
+        return data.keys().hasAll(['name', 'ownerId']) &&
+               data.name is string && data.name.size() <= 128 &&
+               data.ownerId == request.auth.uid;
+      }
+
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isEmailVerified() && isValidClient(incoming()) && isValidId(clientId);
+      allow update: if isSignedIn() && isEmailVerified() && resource.data.ownerId == request.auth.uid && isValidClient(incoming());
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}

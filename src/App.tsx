@@ -48,6 +48,7 @@ import {
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCashOpen, setIsCashOpen] = useState(true);
   
@@ -157,6 +158,20 @@ export default function App() {
     }
   };
 
+  const handleLogin = async () => {
+    setAuthError(null);
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      if (err.code === 'auth/unauthorized-domain') {
+        setAuthError(`Este domínio (${window.location.hostname}) não está autorizado no Firebase. Por favor, adicione-o em 'Authorized Domains' no console do Firebase.`);
+      } else {
+        setAuthError(err.message || "Ocorreu um erro ao tentar entrar.");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center p-4">
@@ -172,21 +187,26 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 space-y-8">
-        <div className="text-center space-y-2">
-          <div className="w-20 h-20 bg-primary-fixed rounded-3xl mx-auto flex items-center justify-center text-primary shadow-xl">
-             <ShoppingBag size={40} />
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-primary mt-4">GestorPro</h1>
+        <div className="text-center space-y-4">
+          <img src="input_file_0.png" alt="GerentePro Logo" className="w-full max-w-[280px] mx-auto drop-shadow-xl" referrerPolicy="no-referrer" />
           <p className="text-outline">Gerencie seu negócio com facilidade e segurança.</p>
         </div>
 
-        <button 
-          onClick={loginWithGoogle}
-          className="w-full max-w-xs bg-white border border-outline-variant p-4 rounded-2xl flex items-center justify-center gap-3 font-bold shadow-md hover:bg-surface-container transition-all active:scale-95"
-        >
-          <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" referrerPolicy="no-referrer" />
-          Entrar com Google
-        </button>
+        <div className="w-full max-w-xs space-y-4">
+          {authError && (
+            <div className="bg-error-container text-error p-4 rounded-xl text-xs font-bold border border-error/20 animate-pulse">
+              {authError}
+            </div>
+          )}
+          
+          <button 
+            onClick={handleLogin}
+            className="w-full bg-white border border-outline-variant p-4 rounded-2xl flex items-center justify-center gap-3 font-bold shadow-md hover:bg-surface-container transition-all active:scale-95"
+          >
+            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" referrerPolicy="no-referrer" />
+            Entrar com Google
+          </button>
+        </div>
       </div>
     );
   }
@@ -231,7 +251,7 @@ export default function App() {
               <User size={24} />
             )}
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-primary">GestorPro</h1>
+          <img src="input_file_0.png" alt="GerentePro Logo" className="h-8 object-contain" referrerPolicy="no-referrer" />
         </div>
         <div className="flex items-center gap-2">
           <button 
